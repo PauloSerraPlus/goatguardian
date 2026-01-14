@@ -169,41 +169,61 @@ class BootScene extends Phaser.Scene {
 }
 
 class StartScene extends Phaser.Scene {
-  constructor(){ super("StartScene"); }
-  create() {
-    const w = this.cameras.main.width;
-    const h = this.cameras.main.height;
+    constructor() {
+        super("StartScene");
+    }
 
-    this.add.rectangle(w/2, h/2, w, h, 0x0b1a0b).setScrollFactor(0);
+    create() {
+        const w = this.cameras.main.width;
+        const h = this.cameras.main.height;
 
-    this.add.text(w/2, h/2 - 60, "GOAT GUARDIAN", {
-      fontFamily: "Arial",
-      fontSize: "54px",
-      color: "#ffffff"
-    }).setOrigin(0.5);
+        // Fundo simples (independente de assets)
+        this.add.rectangle(w / 2, h / 2, w, h, 0x0b1a0b).setScrollFactor(0);
 
-    const t = this.add.text(w/2, h/2 + 40, "Clique / Toque para começar", {
-      fontFamily: "Arial",
-      fontSize: "26px",
-      color: "#ffffff"
-    }).setOrigin(0.5).setInteractive();
+        this.add.text(w / 2, h / 2 - 60, "GOAT GUARDIAN", {
+            fontFamily: "Arial",
+            fontSize: "54px",
+            color: "#ffffff"
+        }).setOrigin(0.5);
 
-    this.tweens.add({ targets: t, alpha: 0.4, duration: 700, yoyo: true, repeat: -1 });
+        const t = this.add.text(w / 2, h / 2 + 40, "Clique / Toque para começar", {
+            fontFamily: "Arial",
+            fontSize: "26px",
+            color: "#ffffff"
+        }).setOrigin(0.5);
 
-    const startGame = () => {
-      this.scene.start("GameScene");
-    };
+        this.tweens.add({ targets: t, alpha: 0.4, duration: 700, yoyo: true, repeat: -1 });
 
-    // Clique/toque no texto
-    t.on("pointerdown", startGame);
-    // Clique/toque em qualquer lugar
-    this.input.once("pointerdown", startGame);
-    // Teclado (Enter/Espaço)
-    const enterKey = this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.ENTER);
-    const spaceKey = this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.SPACE);
-    enterKey.once("down", startGame);
-    spaceKey.once("down", startGame);
-}
+        const startGame = () => {
+            console.log("[GoatGuardian] Start pressed -> starting GameScene");
+            this.scene.start("GameScene");
+        };
+
+        // 1) Área clicável em tela cheia (mais confiável que texto)
+        const hit = this.add.rectangle(w / 2, h / 2, w, h, 0x000000, 0.001)
+            .setInteractive({ useHandCursor: true });
+        hit.on("pointerdown", startGame);
+
+        // 2) Texto também clicável
+        t.setInteractive({ useHandCursor: true });
+        t.on("pointerdown", startGame);
+
+        // 3) Qualquer input de mouse/toque
+        this.input.on("pointerdown", startGame);
+
+        // 4) Teclado: Enter/Espaço/Seta para cima
+        this.input.keyboard.on("keydown-ENTER", startGame);
+        this.input.keyboard.on("keydown-SPACE", startGame);
+        this.input.keyboard.on("keydown-UP", startGame);
+
+        // 5) Fallback: se nada funcionar, inicia sozinho em 2s
+        this.time.delayedCall(2000, () => {
+            if (this.scene.isActive("StartScene")) {
+                console.log("[GoatGuardian] Auto-start fallback");
+                startGame();
+            }
+        });
+    }
 }
 
 class GameOverScene extends Phaser.Scene {
@@ -221,20 +241,8 @@ class GameOverScene extends Phaser.Scene {
       fontFamily:"Arial", fontSize:"28px", color:"#fff"
     }).setOrigin(0.5).setInteractive();
 
-    const startGame = () => {
-      this.scene.start("GameScene");
-    };
-
-    // Clique/toque no texto
-    t.on("pointerdown", startGame);
-    // Clique/toque em qualquer lugar
-    this.input.once("pointerdown", startGame);
-    // Teclado (Enter/Espaço)
-    const enterKey = this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.ENTER);
-    const spaceKey = this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.SPACE);
-    enterKey.once("down", startGame);
-    spaceKey.once("down", startGame);
-}
+    t.on("pointerdown", () => this.scene.start("GameScene"));
+  }
 }
 
 class VictoryScene extends Phaser.Scene {
@@ -256,20 +264,8 @@ class VictoryScene extends Phaser.Scene {
       fontFamily:"Arial", fontSize:"28px", color:"#fff"
     }).setOrigin(0.5).setInteractive();
 
-    const startGame = () => {
-      this.scene.start("GameScene");
-    };
-
-    // Clique/toque no texto
-    t.on("pointerdown", startGame);
-    // Clique/toque em qualquer lugar
-    this.input.once("pointerdown", startGame);
-    // Teclado (Enter/Espaço)
-    const enterKey = this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.ENTER);
-    const spaceKey = this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.SPACE);
-    enterKey.once("down", startGame);
-    spaceKey.once("down", startGame);
-}
+    t.on("pointerdown", () => this.scene.start("GameScene"));
+  }
 }
 
 class GameScene extends Phaser.Scene {
