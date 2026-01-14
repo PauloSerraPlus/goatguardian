@@ -6,7 +6,64 @@
    - Desktop + Mobile (joystick + botões)
 */
 
-console.log("[GoatGuardian] BUILD visual-tuning-1
+console.log("[GoatGuardian] BUILD visual-fade-2 loaded");
+const GAME_W = 1280;
+const GAME_H = 720;
+
+const WORLD_W = 3000;
+const WORLD_H = 2000;
+
+// ====== Regras do seu conceito ======
+const PLAYER_MAX_HP = 10;
+
+// Cada ataque tira 1 “hit” (reduz 1 HP do bode)
+const ENEMY_DEFS = {
+  brown:  { hp: 1, damage: 1, speed: 85,  tint: 0x8b5a2b, label: "Bode Marrom" },
+  orange: { hp: 3, damage: 2, speed: 75,  tint: 0xff8c00, label: "Bode Laranja" },
+  blue:   { hp: 5, damage: 3, speed: 70,  tint: 0x2e86ff, label: "Bode Azul" },
+  black:  { hp: 5, damage: 5, speed: 65,  tint: 0x111111, label: "Bode Preto Gigante" },
+};
+
+const PHASE_V1 = {
+  brownCount: 10,
+  orangeCount: 5,
+  hasBlueGeneral: true,
+  hasBlackBoss: true
+};
+
+// Cura
+const FRUIT_HEAL = 2;
+
+// Riacho: +1 por segundo (com cooldown após sair)
+const RIVER_HEAL_PER_SEC = 1;
+const RIVER_COOLDOWN_MS = 5000;
+const RIVER_TICK_MS = 250; // acumula até virar 1 segundo
+
+// Ataques
+const COOLDOWN_HORN = 500;
+const COOLDOWN_KICK = 750;
+const IFRAME_MS = 600;      // invencibilidade pós-dano
+const KNOCKBACK = 220;
+
+// ====== Phaser Config ======
+const config = {
+  type: Phaser.AUTO,
+  width: GAME_W,
+  height: GAME_H,
+  parent: "game-container",
+  pixelArt: true,
+  physics: {
+    default: "arcade",
+    arcade: { gravity: { y: 0 }, debug: false }
+  },
+  scale: {
+    mode: Phaser.Scale.FIT,
+    autoCenter: Phaser.Scale.CENTER_BOTH
+  },
+  plugins: {
+    scene: [
+      { key: "rexVirtualJoystick", plugin: rexvirtualjoystickplugin, start: true }
+    ]
   },
   scene: []
 };
@@ -216,9 +273,6 @@ class GameScene extends Phaser.Scene {
   constructor(){
     super("GameScene");
 
-    // Objetos de cenário para efeito de transparência (quando o player passa atrás)
-    this.envObjects = [];
-
     // Estado
     this.hp = PLAYER_MAX_HP;
     this.lastDamageAt = -99999;
@@ -243,6 +297,7 @@ class GameScene extends Phaser.Scene {
     this.enemies = null;
     this.fruits = null;
     this.obstacles = null;
+    this.envObjects = [];
 
     // Player
     this.player = null;
@@ -384,7 +439,7 @@ class GameScene extends Phaser.Scene {
         o.setScale(yToScale(y) * 0.55);
         o.setAlpha(0.75);
         this.envObjects.push(o);
-      }
+}
     };
 
     place("tree_big", 18);
@@ -521,7 +576,7 @@ class GameScene extends Phaser.Scene {
 
     const f = this.fruits.create(x, y, "fruit");
     f.setDepth(y);
-    f.setScale(yToScale(y) * 0.55);
+    f.setScale(yToScale(y));
     f.body.setCircle(10, f.width/2 - 10, f.height/2 - 10);
     return f;
   }
@@ -668,19 +723,17 @@ class GameScene extends Phaser.Scene {
     this.handleRiverHealing(time);
     this.handleSpawns();
 
-    // Transparência dinâmica: se o player estiver "atrás" do objeto (mais acima no Y), o objeto fica translúcido
+    // Fade do cenário: se o player estiver “atrás” do objeto (mais acima no Y), deixa semi-transparente
     if (this.envObjects && this.envObjects.length) {
-      this.envObjects.forEach(o => {
+      this.envObjects.forEach((o) => {
         if (!o.active) return;
-        const dx = Math.abs(this.player.x - o.x);
-        const behind = this.player.y < (o.y - 12);
-        if (behind && dx < 90) {
-          o.setAlpha(0.35);
-        } else {
-          o.setAlpha(0.75);
-        }
+        const dyObj = this.player.y - o.y;
+        const dxObj = Math.abs(this.player.x - o.x);
+        if (dyObj < -10 && dxObj < 90) o.setAlpha(0.35);
+        else o.setAlpha(0.75);
       });
     }
+
     this.drawMinimap();
     this.updateHUD();
 
