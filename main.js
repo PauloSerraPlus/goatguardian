@@ -216,6 +216,9 @@ class GameScene extends Phaser.Scene {
   constructor(){
     super("GameScene");
 
+    // Objetos de cenário para efeito de transparência (quando o player passa atrás)
+    this.envObjects = [];
+
     // Estado
     this.hp = PLAYER_MAX_HP;
     this.lastDamageAt = -99999;
@@ -362,19 +365,6 @@ class GameScene extends Phaser.Scene {
     this.riverAccum = 0;
 
     this.updateHUD();
-
-    // --- Iso fade: environment becomes transparent when player is behind ---
-    if (this.envObjects && this.player) {
-      this.envObjects.forEach(o => {
-        const dy = this.player.y - o.y;
-        const dx = Math.abs(this.player.x - o.x);
-        if (dy < -10 && dx < 80) {
-          o.setAlpha(0.35);
-        } else {
-          o.setAlpha(0.75);
-        }
-      });
-    }
   }
 
   placeEnvironment() {
@@ -392,6 +382,8 @@ class GameScene extends Phaser.Scene {
         o.body.setSize(o.width * 0.5, o.height * 0.25).setOffset(o.width*0.25, o.height*0.75);
         o.setDepth(y - 40);
         o.setScale(yToScale(y) * 0.55);
+        o.setAlpha(0.75);
+        this.envObjects.push(o);
       }
     };
 
@@ -598,19 +590,6 @@ class GameScene extends Phaser.Scene {
     }
 
     this.updateHUD();
-
-    // --- Iso fade: environment becomes transparent when player is behind ---
-    if (this.envObjects && this.player) {
-      this.envObjects.forEach(o => {
-        const dy = this.player.y - o.y;
-        const dx = Math.abs(this.player.x - o.x);
-        if (dy < -10 && dx < 80) {
-          o.setAlpha(0.35);
-        } else {
-          o.setAlpha(0.75);
-        }
-      });
-    }
   }
 
   damagePlayer(amount, fromEnemy) {
@@ -637,19 +616,6 @@ class GameScene extends Phaser.Scene {
     this.hp = Math.min(PLAYER_MAX_HP, this.hp + FRUIT_HEAL);
     this.updateHUD();
 
-
-    // --- Iso fade: environment becomes transparent when player is behind ---
-    if (this.envObjects && this.player) {
-      this.envObjects.forEach(o => {
-        const dy = this.player.y - o.y;
-        const dx = Math.abs(this.player.x - o.x);
-        if (dy < -10 && dx < 80) {
-          o.setAlpha(0.35);
-        } else {
-          o.setAlpha(0.75);
-        }
-      });
-    }
     this.time.delayedCall(2500, () => this.spawnFruit());
   }
 
@@ -701,22 +667,23 @@ class GameScene extends Phaser.Scene {
 
     this.handleRiverHealing(time);
     this.handleSpawns();
-    this.drawMinimap();
-    this.updateHUD();
 
-
-    // --- Iso fade: environment becomes transparent when player is behind ---
-    if (this.envObjects && this.player) {
+    // Transparência dinâmica: se o player estiver "atrás" do objeto (mais acima no Y), o objeto fica translúcido
+    if (this.envObjects && this.envObjects.length) {
       this.envObjects.forEach(o => {
-        const dy = this.player.y - o.y;
+        if (!o.active) return;
         const dx = Math.abs(this.player.x - o.x);
-        if (dy < -10 && dx < 80) {
+        const behind = this.player.y < (o.y - 12);
+        if (behind && dx < 90) {
           o.setAlpha(0.35);
         } else {
           o.setAlpha(0.75);
         }
       });
     }
+    this.drawMinimap();
+    this.updateHUD();
+
     if (this.hp <= 0) {
       this.scene.start("GameOverScene");
     }
