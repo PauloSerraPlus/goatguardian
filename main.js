@@ -6,6 +6,8 @@
    - Desktop + Mobile (joystick + botões)
 */
 
+console.log("[GoatGuardian] BUILD 2026-01-14T15:xxZ main_v2 loaded");
+
 const GAME_W = 1280;
 const GAME_H = 720;
 
