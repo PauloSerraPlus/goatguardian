@@ -701,7 +701,7 @@ class GameScene extends Phaser.Scene {
     if (iso.vx < -0.05) this.player.setFlipX(true);
     else if (iso.vx > 0.05) this.player.setFlipX(false);
 
-    this.enemies.children.each((e) => {
+    this.enemies.getChildren().forEach((e) => {
       if (!e.active) return;
       this.enemyAI(e, time);
       setIsoDepthAndScale(e, e.shadow);
@@ -709,7 +709,7 @@ class GameScene extends Phaser.Scene {
 
     setIsoDepthAndScale(this.player, this.playerShadow);
 
-    this.enemies.children.each((e) => {
+    this.enemies.getChildren().forEach((e) => {
       if (!e.active) return;
       if (Phaser.Math.Distance.Between(e.x, e.y, this.player.x, this.player.y) < 28) {
         this.damagePlayer(e.damage, e);
@@ -789,14 +789,14 @@ class GameScene extends Phaser.Scene {
       this.flashCenter("GENERAL AZUL!");
     }
 
-    const hasAnyBlueAlive = this.enemies.children.some(e => e.active && e.type === "blue");
+    const hasAnyBlueAlive = this.enemies.getChildren().some(e => e.active && e.type === "blue");
     if (PHASE_V1.hasBlackBoss && this.spawnedBlue && !hasAnyBlueAlive && !this.spawnedBlack) {
       this.spawnEnemy("black");
       this.spawnedBlack = true;
       this.flashCenter("CHEFÃO PRETO!");
     }
 
-    const hasBlackAlive = this.enemies.children.some(e => e.active && e.type === "black");
+    const hasBlackAlive = this.enemies.getChildren().some(e => e.active && e.type === "black");
     if (this.spawnedBlack && !hasBlackAlive) {
       this.scene.start("VictoryScene");
     }
@@ -817,7 +817,7 @@ class GameScene extends Phaser.Scene {
   updateHUD() {
     this.hpText.setText(`HP: ${this.hp}/${PLAYER_MAX_HP}`);
 
-    const aliveEnemies = this.enemies.children.filter(e => e.active).length;
+    const aliveEnemies = this.enemies.getChildren().filter(e => e.active).length;
     let phaseTxt = "Fase 1";
     if (!this.spawnedBlue) phaseTxt += " (Marrons/Laranjas)";
     else if (!this.spawnedBlack) phaseTxt += " (General Azul)";
@@ -842,7 +842,7 @@ class GameScene extends Phaser.Scene {
     this.minimapG.fillStyle(0x00ff66, 1);
     this.minimapG.fillRect(x + this.player.x*sx - 2, y + this.player.y*sy - 2, 4, 4);
 
-    this.enemies.children.each((e) => {
+    this.enemies.getChildren().forEach((e) => {
       if (!e.active) return;
       let c = 0xff3333;
       if (e.type === "blue") c = 0x2e86ff;
