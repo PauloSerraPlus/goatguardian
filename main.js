@@ -190,8 +190,20 @@ class StartScene extends Phaser.Scene {
 
     this.tweens.add({ targets: t, alpha: 0.4, duration: 700, yoyo: true, repeat: -1 });
 
-    t.on("pointerdown", () => this.scene.start("GameScene"));
-  }
+    const startGame = () => {
+      this.scene.start("GameScene");
+    };
+
+    // Clique/toque no texto
+    t.on("pointerdown", startGame);
+    // Clique/toque em qualquer lugar
+    this.input.once("pointerdown", startGame);
+    // Teclado (Enter/Espaço)
+    const enterKey = this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.ENTER);
+    const spaceKey = this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.SPACE);
+    enterKey.once("down", startGame);
+    spaceKey.once("down", startGame);
+}
 }
 
 class GameOverScene extends Phaser.Scene {
@@ -209,8 +221,20 @@ class GameOverScene extends Phaser.Scene {
       fontFamily:"Arial", fontSize:"28px", color:"#fff"
     }).setOrigin(0.5).setInteractive();
 
-    t.on("pointerdown", () => this.scene.start("GameScene"));
-  }
+    const startGame = () => {
+      this.scene.start("GameScene");
+    };
+
+    // Clique/toque no texto
+    t.on("pointerdown", startGame);
+    // Clique/toque em qualquer lugar
+    this.input.once("pointerdown", startGame);
+    // Teclado (Enter/Espaço)
+    const enterKey = this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.ENTER);
+    const spaceKey = this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.SPACE);
+    enterKey.once("down", startGame);
+    spaceKey.once("down", startGame);
+}
 }
 
 class VictoryScene extends Phaser.Scene {
@@ -232,8 +256,20 @@ class VictoryScene extends Phaser.Scene {
       fontFamily:"Arial", fontSize:"28px", color:"#fff"
     }).setOrigin(0.5).setInteractive();
 
-    t.on("pointerdown", () => this.scene.start("GameScene"));
-  }
+    const startGame = () => {
+      this.scene.start("GameScene");
+    };
+
+    // Clique/toque no texto
+    t.on("pointerdown", startGame);
+    // Clique/toque em qualquer lugar
+    this.input.once("pointerdown", startGame);
+    // Teclado (Enter/Espaço)
+    const enterKey = this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.ENTER);
+    const spaceKey = this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.SPACE);
+    enterKey.once("down", startGame);
+    spaceKey.once("down", startGame);
+}
 }
 
 class GameScene extends Phaser.Scene {
