@@ -6,65 +6,7 @@
    - Desktop + Mobile (joystick + botões)
 */
 
-console.log("[GoatGuardian] BUILD 2026-01-14T15:xxZ main_v2 loaded");
-
-const GAME_W = 1280;
-const GAME_H = 720;
-
-const WORLD_W = 3000;
-const WORLD_H = 2000;
-
-// ====== Regras do seu conceito ======
-const PLAYER_MAX_HP = 10;
-
-// Cada ataque tira 1 “hit” (reduz 1 HP do bode)
-const ENEMY_DEFS = {
-  brown:  { hp: 1, damage: 1, speed: 85,  tint: 0x8b5a2b, label: "Bode Marrom" },
-  orange: { hp: 3, damage: 2, speed: 75,  tint: 0xff8c00, label: "Bode Laranja" },
-  blue:   { hp: 5, damage: 3, speed: 70,  tint: 0x2e86ff, label: "Bode Azul" },
-  black:  { hp: 5, damage: 5, speed: 65,  tint: 0x111111, label: "Bode Preto Gigante" },
-};
-
-const PHASE_V1 = {
-  brownCount: 10,
-  orangeCount: 5,
-  hasBlueGeneral: true,
-  hasBlackBoss: true
-};
-
-// Cura
-const FRUIT_HEAL = 2;
-
-// Riacho: +1 por segundo (com cooldown após sair)
-const RIVER_HEAL_PER_SEC = 1;
-const RIVER_COOLDOWN_MS = 5000;
-const RIVER_TICK_MS = 250; // acumula até virar 1 segundo
-
-// Ataques
-const COOLDOWN_HORN = 500;
-const COOLDOWN_KICK = 750;
-const IFRAME_MS = 600;      // invencibilidade pós-dano
-const KNOCKBACK = 220;
-
-// ====== Phaser Config ======
-const config = {
-  type: Phaser.AUTO,
-  width: GAME_W,
-  height: GAME_H,
-  parent: "game-container",
-  pixelArt: true,
-  physics: {
-    default: "arcade",
-    arcade: { gravity: { y: 0 }, debug: false }
-  },
-  scale: {
-    mode: Phaser.Scale.FIT,
-    autoCenter: Phaser.Scale.CENTER_BOTH
-  },
-  plugins: {
-    scene: [
-      { key: "rexVirtualJoystick", plugin: rexvirtualjoystickplugin, start: true }
-    ]
+console.log("[GoatGuardian] BUILD visual-tuning-1
   },
   scene: []
 };
@@ -78,7 +20,7 @@ function yToScale(y) {
 
 function setIsoDepthAndScale(sprite, shadow) {
   sprite.setDepth(sprite.y);
-  const s = yToScale(sprite.y);
+  const s = yToScale(sprite.y) * 0.65;
   sprite.setScale(s);
   if (shadow) {
     shadow.setDepth(sprite.depth - 1);
@@ -420,6 +362,19 @@ class GameScene extends Phaser.Scene {
     this.riverAccum = 0;
 
     this.updateHUD();
+
+    // --- Iso fade: environment becomes transparent when player is behind ---
+    if (this.envObjects && this.player) {
+      this.envObjects.forEach(o => {
+        const dy = this.player.y - o.y;
+        const dx = Math.abs(this.player.x - o.x);
+        if (dy < -10 && dx < 80) {
+          o.setAlpha(0.35);
+        } else {
+          o.setAlpha(0.75);
+        }
+      });
+    }
   }
 
   placeEnvironment() {
@@ -435,8 +390,8 @@ class GameScene extends Phaser.Scene {
         const o = this.obstacles.create(x, y, key);
         o.setOrigin(0.5, 1); // pé embaixo
         o.body.setSize(o.width * 0.5, o.height * 0.25).setOffset(o.width*0.25, o.height*0.75);
-        o.setDepth(y);
-        o.setScale(yToScale(y));
+        o.setDepth(y - 40);
+        o.setScale(yToScale(y) * 0.55);
       }
     };
 
@@ -574,7 +529,7 @@ class GameScene extends Phaser.Scene {
 
     const f = this.fruits.create(x, y, "fruit");
     f.setDepth(y);
-    f.setScale(yToScale(y));
+    f.setScale(yToScale(y) * 0.55);
     f.body.setCircle(10, f.width/2 - 10, f.height/2 - 10);
     return f;
   }
@@ -643,6 +598,19 @@ class GameScene extends Phaser.Scene {
     }
 
     this.updateHUD();
+
+    // --- Iso fade: environment becomes transparent when player is behind ---
+    if (this.envObjects && this.player) {
+      this.envObjects.forEach(o => {
+        const dy = this.player.y - o.y;
+        const dx = Math.abs(this.player.x - o.x);
+        if (dy < -10 && dx < 80) {
+          o.setAlpha(0.35);
+        } else {
+          o.setAlpha(0.75);
+        }
+      });
+    }
   }
 
   damagePlayer(amount, fromEnemy) {
@@ -669,6 +637,19 @@ class GameScene extends Phaser.Scene {
     this.hp = Math.min(PLAYER_MAX_HP, this.hp + FRUIT_HEAL);
     this.updateHUD();
 
+
+    // --- Iso fade: environment becomes transparent when player is behind ---
+    if (this.envObjects && this.player) {
+      this.envObjects.forEach(o => {
+        const dy = this.player.y - o.y;
+        const dx = Math.abs(this.player.x - o.x);
+        if (dy < -10 && dx < 80) {
+          o.setAlpha(0.35);
+        } else {
+          o.setAlpha(0.75);
+        }
+      });
+    }
     this.time.delayedCall(2500, () => this.spawnFruit());
   }
 
@@ -723,6 +704,19 @@ class GameScene extends Phaser.Scene {
     this.drawMinimap();
     this.updateHUD();
 
+
+    // --- Iso fade: environment becomes transparent when player is behind ---
+    if (this.envObjects && this.player) {
+      this.envObjects.forEach(o => {
+        const dy = this.player.y - o.y;
+        const dx = Math.abs(this.player.x - o.x);
+        if (dy < -10 && dx < 80) {
+          o.setAlpha(0.35);
+        } else {
+          o.setAlpha(0.75);
+        }
+      });
+    }
     if (this.hp <= 0) {
       this.scene.start("GameOverScene");
     }
