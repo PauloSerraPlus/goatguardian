@@ -7,7 +7,7 @@
    Obs: mantém as melhorias v1.2 do jogo (tamanhos, rio, cura, espaçamento, mobile).
 */
 
-console.log("[GoatGuardian] BUILD v1.3.3-boss-1768497924 loaded");
+console.log("[GoatGuardian] BUILD v1.3.3-fixbrief-1768499559 loaded");
 
 const GAME_W = 1280;
 const GAME_H = 720;
@@ -239,6 +239,50 @@ class StartScene extends Phaser.Scene{
     // Teclado
     this.input.keyboard?.once("keydown-ENTER", startGame);
     this.input.keyboard?.once("keydown-SPACE", startGame);
+  }
+}
+
+
+class Briefing1Scene extends Phaser.Scene{
+  constructor(){ super("Briefing1Scene"); }
+
+  create(){
+    const w = this.cameras.main.width;
+    const h = this.cameras.main.height;
+
+    this.add.rectangle(w/2,h/2,w,h,0x000000,0.85);
+
+    this.add.text(w/2, h/2 - 90, "Primeira Missão", {
+      fontFamily:"Arial",
+      fontSize:"36px",
+      color:"#ffffff"
+    }).setOrigin(0.5);
+
+    this.add.text(w/2, h/2 - 20,
+      "Vencer os Bodes Comuns (com 1 golpe)\n" +
+      "e Bodes Guerreiros (com 2 golpes).\n\n" +
+      "Use setas para mover sua Cabra.\n" +
+      'Use "J" para chifradas e "K" para coices.',
+    {
+      fontFamily:"Arial",
+      fontSize:"20px",
+      color:"#ffffff",
+      align:"center",
+      lineSpacing:8
+    }).setOrigin(0.5);
+
+    const btn = this.add.text(w/2, h/2 + 120, "COMEÇAR", {
+      fontFamily:"Arial",
+      fontSize:"28px",
+      backgroundColor:"#1516b3",
+      color:"#ffffff",
+      padding:{ left:20, right:20, top:12, bottom:12 }
+    }).setOrigin(0.5).setInteractive({ useHandCursor:true });
+
+    const go = ()=> this.scene.start("GameScene");
+    btn.on("pointerup", go);
+    this.input.keyboard.on("keydown-ENTER", go);
+    this.input.keyboard.on("keydown-SPACE", go);
   }
 }
 
