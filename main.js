@@ -1,13 +1,13 @@
-/* Goat Guardian — v1.2 (ajustes de jogabilidade e visual)
-   1) Frutas e moitas menores
-   2) Obstáculos mais espaçados (melhor fluxo)
-   3) Riacho com visual melhor (faixa + bordas + brilho)
-   4) Cura mais confiável + feedback visual (brilho/pulso + texto +HP)
-   5) Abertura com logo + botão INICIAR + crédito
-   6) Mobile/tablet: touch confiável + joystick + botões + responsivo (FIT)
+/* Goat Guardian — v1.3 (tela inicial aprimorada)
+   Melhorias na tela inicial:
+   - Animação de entrada (fade + leve zoom do logo)
+   - Botão INICIAR com "pulse" e feedback de toque
+   - Mensagem curta de instrução (desktop e mobile)
+   - Correção robusta de input: pointerup + teclado
+   Obs: mantém as melhorias v1.2 do jogo (tamanhos, rio, cura, espaçamento, mobile).
 */
 
-console.log("[GoatGuardian] BUILD v1.2 loaded");
+console.log("[GoatGuardian] BUILD v1.3-startscreen loaded");
 
 const GAME_W = 1280;
 const GAME_H = 720;
@@ -100,7 +100,10 @@ class PreloadScene extends Phaser.Scene{
   constructor(){ super("PreloadScene"); }
   preload(){
     const w=this.cameras.main.width, h=this.cameras.main.height;
-    this.add.text(w/2, h/2, "Carregando...", {fontSize:"28px", color:"#fff"}).setOrigin(0.5);
+    const t1 = this.add.text(w/2, h/2 - 10, "Carregando...", {fontSize:"28px", color:"#fff"}).setOrigin(0.5);
+    const t2 = this.add.text(w/2, h/2 + 26, "0%", {fontSize:"18px", color:"#b9c7d6"}).setOrigin(0.5);
+
+    this.load.on("progress", (p)=> t2.setText(Math.round(p*100) + "%"));
 
     // LOGO: suba como assets/images/logo_goat_guardian.png
     this.load.image("logo", "assets/images/logo_goat_guardian.png");
@@ -125,38 +128,113 @@ class PreloadScene extends Phaser.Scene{
 
 class StartScene extends Phaser.Scene{
   constructor(){ super("StartScene"); }
+
   create(){
-    const w=this.cameras.main.width, h=this.cameras.main.height;
+    const w = this.cameras.main.width;
+    const h = this.cameras.main.height;
 
-    this.add.rectangle(w/2, h/2, w, h, 0x0b0f0b);
+    // Fundo com leve vinheta
+    const bg = this.add.rectangle(w/2, h/2, w, h, 0x0b0f0b);
+    const vignette = this.add.graphics().setScrollFactor(0);
+    vignette.fillStyle(0x000000, 0.35);
+    vignette.fillRect(0,0,w,h);
+    vignette.setBlendMode(Phaser.BlendModes.MULTIPLY);
 
-    const logo = this.add.image(w/2, h/2 - 70, "logo").setOrigin(0.5);
-    logo.setScale(Math.min(1.0, (w*0.78)/logo.width));
+    // Logo (mais alto) + animação de entrada
+    const logo = this.add.image(w/2, h/2 - 170, "logo").setOrigin(0.5);
+    const baseScale = Math.min(1.0, (w * 0.78) / logo.width);
+    logo.setScale(baseScale * 0.92);
+    logo.setAlpha(0);
 
-    const btnW = 260, btnH = 68;
-    const btn = this.add.rectangle(w/2, h/2 + 120, btnW, btnH, 0x24D8FC, 1).setStrokeStyle(3, 0xffffff, 1);
-    const txt = this.add.text(w/2, h/2 + 120, "INICIAR", {fontSize:"28px", color:"#001018", fontStyle:"bold"}).setOrigin(0.5);
+    // Botão (bem abaixo da marca)
+    const btnY = h/2 + 165;
+    const btnW = 300;
+    const btnH = 76;
 
-    this.add.text(w/2, h - 26, "Idealizado e criado por Bernardo Barrocas", {
-      fontSize:"14px", color:"#d7d7d7"
-    }).setOrigin(0.5);
+    const btn = this.add.rectangle(w/2, btnY, btnW, btnH, 0x24D8FC, 1)
+      .setStrokeStyle(3, 0xffffff, 1)
+      .setInteractive({ useHandCursor: true });
 
-    // Área clicável full screen (mobile-friendly)
-    const hit = this.add.rectangle(w/2, h/2, w, h, 0x000000, 0.001).setInteractive();
-    btn.setInteractive({useHandCursor:true});
-    txt.setInteractive({useHandCursor:true});
+    const txt = this.add.text(w/2, btnY, "INICIAR", {
+      fontSize: "32px",
+      fontStyle: "bold",
+      color: "#001018"
+    }).setOrigin(0.5).setInteractive({ useHandCursor:true });
+
+    // Instruções (curtas)
+    const hint = this.add.text(w/2, btnY + 70,
+      "PC: ENTER / SPACE  •  Mobile: toque no botão",
+      { fontSize:"16px", color:"#b9c7d6" }
+    ).setOrigin(0.5);
+    hint.setAlpha(0);
+
+    // Rodapé
+    const footer = this.add.text(w/2, h - 28,
+      "Idealizado e criado por Bernardo Barrocas",
+      { fontSize:"14px", color:"#d7d7d7" }
+    ).setOrigin(0.5);
+    footer.setAlpha(0);
+
+    // Animações de entrada
+    this.tweens.add({
+      targets: logo,
+      alpha: 1,
+      scale: baseScale,
+      duration: 520,
+      ease: "Sine.easeOut"
+    });
+
+    this.tweens.add({
+      targets: [hint, footer],
+      alpha: 1,
+      duration: 520,
+      delay: 220
+    });
+
+    // Pulse no botão
+    this.tweens.add({
+      targets: btn,
+      scaleX: 1.03,
+      scaleY: 1.03,
+      duration: 650,
+      yoyo: true,
+      repeat: -1,
+      ease: "Sine.easeInOut"
+    });
+
+    // Feedback visual ao tocar/hover
+    const pressIn = () => { btn.setFillStyle(0x11DFFF, 1); btn.setStrokeStyle(3, 0xffffff, 1); };
+    const pressOut = () => { btn.setFillStyle(0x24D8FC, 1); btn.setStrokeStyle(3, 0xffffff, 1); };
+
+    btn.on("pointerover", pressIn);
+    btn.on("pointerout", pressOut);
+    txt.on("pointerover", pressIn);
+    txt.on("pointerout", pressOut);
 
     const startGame = () => {
-      console.log("[GoatGuardian] start pressed");
-      this.scene.start("GameScene");
+      console.log("[GoatGuardian] START GAME");
+      // evita duplo start
+      if (this._starting) return;
+      this._starting = true;
+
+      // mini transição
+      this.tweens.add({
+        targets: [logo, btn, txt, hint, footer],
+        alpha: 0,
+        duration: 220,
+        onComplete: () => {
+          this.scene.start("GameScene");
+        }
+      });
     };
 
-    hit.on("pointerdown", startGame);
-    btn.on("pointerdown", startGame);
-    txt.on("pointerdown", startGame);
+    // IMPORTANTÍSSIMO: pointerup é mais confiável no mobile
+    btn.on("pointerup", startGame);
+    txt.on("pointerup", startGame);
 
-    this.input.keyboard?.on("keydown-ENTER", startGame);
-    this.input.keyboard?.on("keydown-SPACE", startGame);
+    // Teclado
+    this.input.keyboard?.once("keydown-ENTER", startGame);
+    this.input.keyboard?.once("keydown-SPACE", startGame);
   }
 }
 
@@ -285,13 +363,14 @@ class GameScene extends Phaser.Scene{
       const bg = this.add.circle(x,y,44,0x24d8fc,0.75).setScrollFactor(0).setDepth(99999).setInteractive();
       const tx = this.add.text(x,y,label,{fontSize:"18px", color:"#001018", fontStyle:"bold"}).setOrigin(0.5).setScrollFactor(0).setDepth(100000).setInteractive();
       bg.on("pointerdown", ()=>tx.emit("pointerdown"));
+      bg.on("pointerup", ()=>tx.emit("pointerup"));
       return {bg, tx};
     };
 
     const b1 = mkBtn(GAME_W - 130, GAME_H - 140, "J");
     const b2 = mkBtn(GAME_W - 240, GAME_H - 240, "K");
-    b1.tx.on("pointerdown", ()=>this.tryAttack("horn"));
-    b2.tx.on("pointerdown", ()=>this.tryAttack("kick"));
+    b1.tx.on("pointerup", ()=>this.tryAttack("horn"));
+    b2.tx.on("pointerup", ()=>this.tryAttack("kick"));
   }
 
   spawnEnvironment(){
