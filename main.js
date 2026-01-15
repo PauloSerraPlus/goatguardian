@@ -7,7 +7,7 @@
    Obs: mantém as melhorias v1.2 do jogo (tamanhos, rio, cura, espaçamento, mobile).
 */
 
-console.log("[GoatGuardian] BUILD v1.3.3-fixbrief-1768499559 loaded");
+console.log("[GoatGuardian] BUILD v1.3.4-victory-1768500739 loaded");
 
 const GAME_W = 1280;
 const GAME_H = 720;
@@ -268,7 +268,7 @@ class Briefing1Scene extends Phaser.Scene{
       fontSize:"20px",
       color:"#ffffff",
       align:"center",
-      lineSpacing:8
+      lineSpacing:14
     }).setOrigin(0.5);
 
     const btn = this.add.text(w/2, h/2 + 120, "COMEÇAR", {
@@ -792,10 +792,10 @@ update(time, delta){
       this.showCenterMessage(
         "Parabéns!",
         "Agora o seu desafio é vencer os Bodes Generais (com 3 golpes).",
-        2200
+        10000
       );
 
-      this.time.delayedCall(2400, ()=>{
+      this.time.delayedCall(10500, ()=>{
         const spawnBlue = ()=>{
           let x,y,tries=0;
           while(tries<300){
@@ -863,6 +863,13 @@ update(time, delta){
       });
     }
 
+
+    // Vitória: derrotou o Grande Bode Preto
+    if(this.spawnedBoss && this.remaining <= 0){
+      this.scene.start("VictoryScene");
+      return;
+    }
+
     this.updateMinimap();
 
     // Game over (volta pro menu)
@@ -872,5 +879,36 @@ update(time, delta){
   }
 }
 
-config.scene = [PreloadScene, StartScene, Briefing1Scene, GameScene];
+
+class VictoryScene extends Phaser.Scene{
+  constructor(){ super("VictoryScene"); }
+
+  create(){
+    const w = this.cameras.main.width;
+    const h = this.cameras.main.height;
+
+    this.add.rectangle(w/2,h/2,w,h,0x000000,0.85);
+
+    this.add.text(w/2, h/2 - 40, "VOCÊ VENCEU!", {
+      fontFamily:"Arial",
+      fontSize:"52px",
+      color:"#ffffff"
+    }).setOrigin(0.5);
+
+    const btn = this.add.text(w/2, h/2 + 90, "JOGAR NOVAMENTE", {
+      fontFamily:"Arial",
+      fontSize:"28px",
+      backgroundColor:"#1516b3",
+      color:"#ffffff",
+      padding:{ left:22, right:22, top:12, bottom:12 }
+    }).setOrigin(0.5).setInteractive({ useHandCursor:true });
+
+    const go = ()=> this.scene.start("StartScene");
+    btn.on("pointerup", go);
+    this.input.keyboard.on("keydown-ENTER", go);
+    this.input.keyboard.on("keydown-SPACE", go);
+  }
+}
+
+config.scene = [PreloadScene, StartScene, Briefing1Scene, GameScene, VictoryScene];
 new Phaser.Game(config);
