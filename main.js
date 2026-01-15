@@ -7,7 +7,7 @@
    Obs: mantém as melhorias v1.2 do jogo (tamanhos, rio, cura, espaçamento, mobile).
 */
 
-console.log("[GoatGuardian] BUILD v1.3.2-mm-1768494922 loaded");
+console.log("[GoatGuardian] BUILD v1.3.3-boss-1768497924 loaded");
 
 const GAME_W = 1280;
 const GAME_H = 720;
@@ -33,8 +33,8 @@ const INVULN_MS = 500;
 // Inimigos (conceito)
 const ENEMIES = {
   marrom:  { hp: 1, dmg: 1, spd: 98,  tint: 0x8b5a2b },
-  laranja: { hp: 3, dmg: 1, spd: 86,  tint: 0xff8c00 },
-  azul:    { hp: 5, dmg: 2, spd: 80,  tint: 0x2e86ff },
+  laranja: { hp: 2, dmg: 1, spd: 86,  tint: 0xff8c00 },
+  azul:    { hp: 3, dmg: 2, spd: 80,  tint: 0x2e86ff },
   preto:   { hp: 5, dmg: 2, spd: 74,  tint: 0x111111 }
 };
 
@@ -227,7 +227,7 @@ class StartScene extends Phaser.Scene{
         alpha: 0,
         duration: 220,
         onComplete: () => {
-          this.scene.start("GameScene");
+          this.scene.start("Briefing1Scene");
         }
       });
     };
@@ -343,6 +343,7 @@ class GameScene extends Phaser.Scene{
 
     this.lastRiverTick = 0;
     this.spawnedGeneral = false;
+    this.spawnedBoss = false;
   }
 
   drawRiver(){
@@ -592,6 +593,42 @@ class GameScene extends Phaser.Scene{
   }
 
   
+
+  showCenterMessage(title, body, duration=1800){
+    const w = this.cameras.main.width;
+    const h = this.cameras.main.height;
+    const pad = 18;
+
+    const bg = this.add.rectangle(w/2, h/2, w*0.82, h*0.32, 0x000000, 0.78)
+      .setScrollFactor(0).setDepth(1000000);
+
+    const t1 = this.add.text(w/2, h/2 - 42, title, {
+      fontFamily:"Arial",
+      fontSize:"28px",
+      color:"#ffffff",
+      align:"center"
+    }).setOrigin(0.5).setScrollFactor(0).setDepth(1000001);
+
+    const t2 = this.add.text(w/2, h/2 + 18, body, {
+      fontFamily:"Arial",
+      fontSize:"18px",
+      color:"#ffffff",
+      align:"center",
+      wordWrap:{ width: w*0.76 }
+    }).setOrigin(0.5).setScrollFactor(0).setDepth(1000001);
+
+    this.tweens.add({ targets:[bg,t1,t2], alpha:{from:0,to:1}, duration:180 });
+
+    this.time.delayedCall(duration, ()=>{
+      this.tweens.add({
+        targets:[bg,t1,t2],
+        alpha:{from:1,to:0},
+        duration:200,
+        onComplete:()=>{ bg.destroy(); t1.destroy(); t2.destroy(); }
+      });
+    });
+  }
+
   updateMinimap(){
     if(!this.minimapGfx) return;
     const g = this.minimapGfx;
@@ -704,26 +741,84 @@ update(time, delta){
       this.drinkText.setText("");
       this.riverGfx.setAlpha(1);
     }
-
-    // General spawn
+    // Generais (azuis) e Chefão (preto)
     if(this.remaining <= 0 && !this.spawnedGeneral){
+      // terminou comuns e guerreiros
       this.spawnedGeneral = true;
-      const p = { x: Phaser.Math.Between(120, WORLD_W-120), y: Phaser.Math.Between(120, WORLD_H-120) };
-      const g = this.enemies.create(p.x, p.y, "bode_azul");
-      g.setOrigin(0.5,0.8);
-      g.type="azul";
-      g.hp=ENEMIES.azul.hp;
-      g.dmg=ENEMIES.azul.dmg;
-      g.spd=ENEMIES.azul.spd;
-      g.setTint(ENEMIES.azul.tint);
-      g.setCollideWorldBounds(true);
-      g.body.setSize(g.width*0.34, g.height*0.26, true);
-      g.body.setOffset(g.width*0.33, g.height*0.56);
-      setIso(g, 0.78);
-      this.remaining = 1;
-      this.updateHud();
-      floatText(this, this.player.x, this.player.y-60, "GENERAL CHEGOU!", "#9fe8ff");
+      this.showCenterMessage(
+        "Parabéns!",
+        "Agora o seu desafio é vencer os Bodes Generais (com 3 golpes).",
+        2200
+      );
+
+      this.time.delayedCall(2400, ()=>{
+        const spawnBlue = ()=>{
+          let x,y,tries=0;
+          while(tries<300){
+            tries++;
+            x = Phaser.Math.Between(140, WORLD_W-140);
+            y = Phaser.Math.Between(140, WORLD_H-140);
+            if(Phaser.Math.Distance.Between(x,y,this.player.x,this.player.y) < 420) continue;
+            if(Phaser.Geom.Rectangle.ContainsPoint(this.riverPath, new Phaser.Geom.Point(x,y))) continue;
+            break;
+          }
+          const g = this.enemies.create(x, y, "bode_azul");
+          g.setOrigin(0.5,0.8);
+          g.type="azul";
+          g.hp=ENEMIES.azul.hp;
+          g.dmg=ENEMIES.azul.dmg;
+          g.spd=ENEMIES.azul.spd;
+          g.setTint(ENEMIES.azul.tint);
+          g.setCollideWorldBounds(true);
+          g.body.setSize(g.width*0.34, g.height*0.26, true);
+          g.body.setOffset(g.width*0.33, g.height*0.56);
+          setIso(g, 0.78);
+        };
+
+        spawnBlue();
+        spawnBlue();
+        this.remaining = 2;
+        this.updateHud();
+      });
     }
+
+    if(this.remaining <= 0 && this.spawnedGeneral && !this.spawnedBoss){
+      // terminou os generais
+      this.spawnedBoss = true;
+
+      this.showCenterMessage(
+        "Parabéns!",
+        "Agora só falta vencer o Grande Bode Preto!",
+        2400
+      );
+
+      this.time.delayedCall(2600, ()=>{
+        let x,y,tries=0;
+        while(tries<400){
+          tries++;
+          x = Phaser.Math.Between(160, WORLD_W-160);
+          y = Phaser.Math.Between(160, WORLD_H-160);
+          if(Phaser.Math.Distance.Between(x,y,this.player.x,this.player.y) < 460) continue;
+          if(Phaser.Geom.Rectangle.ContainsPoint(this.riverPath, new Phaser.Geom.Point(x,y))) continue;
+          break;
+        }
+        const b = this.enemies.create(x, y, "bode_preto");
+        b.setOrigin(0.5,0.8);
+        b.type="preto";
+        b.hp=ENEMIES.preto.hp;
+        b.dmg=ENEMIES.preto.dmg;
+        b.spd=ENEMIES.preto.spd;
+        b.setTint(ENEMIES.preto.tint);
+        b.setCollideWorldBounds(true);
+        b.body.setSize(b.width*0.38, b.height*0.30, true);
+        b.body.setOffset(b.width*0.31, b.height*0.54);
+        setIso(b, 0.78);
+        this.remaining = 1;
+        this.updateHud();
+        floatText(this, this.player.x, this.player.y-60, "CHEFÃO FINAL!", "#ffffff");
+      });
+    }
+
     this.updateMinimap();
 
     // Game over (volta pro menu)
@@ -733,5 +828,5 @@ update(time, delta){
   }
 }
 
-config.scene = [PreloadScene, StartScene, GameScene];
+config.scene = [PreloadScene, StartScene, Briefing1Scene, GameScene];
 new Phaser.Game(config);
