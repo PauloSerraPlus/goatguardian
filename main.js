@@ -436,8 +436,6 @@ class GameScene extends Phaser.Scene{
         const bh = Math.max(18, f.displayHeight*0.45);
         f.body.setSize(bw, bh, false);
         f.body.setOffset((f.displayWidth-bw)/2, (f.displayHeight-bh)/2);
-        f.body.setAllowGravity(false);
-
         this.tweens.add({ targets:f, scale: s*1.10, duration: 600, yoyo:true, repeat:-1, ease:"Sine.easeInOut" });
         break;
       }
