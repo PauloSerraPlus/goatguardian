@@ -7,7 +7,7 @@
    Obs: mantém as melhorias v1.2 do jogo (tamanhos, rio, cura, espaçamento, mobile).
 */
 
-console.log("[GoatGuardian] BUILD v1.3.1-lake-1768484138 loaded");
+console.log("[GoatGuardian] BUILD v1.3.2-mm-1768494922 loaded");
 
 const GAME_W = 1280;
 const GAME_H = 720;
@@ -33,9 +33,9 @@ const INVULN_MS = 500;
 // Inimigos (conceito)
 const ENEMIES = {
   marrom:  { hp: 1, dmg: 1, spd: 98,  tint: 0x8b5a2b },
-  laranja: { hp: 3, dmg: 2, spd: 86,  tint: 0xff8c00 },
-  azul:    { hp: 5, dmg: 3, spd: 80,  tint: 0x2e86ff },
-  preto:   { hp: 5, dmg: 5, spd: 74,  tint: 0x111111 }
+  laranja: { hp: 3, dmg: 1, spd: 86,  tint: 0xff8c00 },
+  azul:    { hp: 5, dmg: 2, spd: 80,  tint: 0x2e86ff },
+  preto:   { hp: 5, dmg: 2, spd: 74,  tint: 0x111111 }
 };
 
 function clamp(v, a, b){ return Math.max(a, Math.min(b, v)); }
@@ -309,13 +309,28 @@ class GameScene extends Phaser.Scene{
     // HUD
     this.hud = this.add.container(16, 14).setScrollFactor(0).setDepth(99999);
     const hudBg = this.add.rectangle(0,0,260,48,0x000000,0.45).setOrigin(0,0);
-    this.hpText = this.add.text(10,10,"HP: "+this.playerHp, {fontSize:"20px", color:"#ffffff"});
+    this.hpText = this.add.text(10,10,"HP: "+this.playerHp+"  |  Bodes: 0", {fontSize:"20px", color:"#ffffff"});
     this.hpBarBg = this.add.rectangle(70, 34, 170, 10, 0x333333, 1).setOrigin(0,0.5);
     this.hpBar = this.add.rectangle(70, 34, 170, 10, 0x24d8fc, 1).setOrigin(0,0.5);
     this.hud.add([hudBg, this.hpText, this.hpBarBg, this.hpBar]);
 
     this.drinkText = this.add.text(GAME_W/2, 16, "", {fontSize:"18px", color:"#aee7ff", stroke:"#000", strokeThickness:3})
       .setOrigin(0.5,0).setScrollFactor(0).setDepth(99999);
+    // --- Minimap (canto superior esquerdo) ---
+    const mmX = 16;
+    const mmY = 76;
+    const mmSize = 150;
+    this.minimapBox = this.add.graphics().setScrollFactor(0).setDepth(99999);
+    this.minimapBox.fillStyle(0x000000, 0.55);
+    this.minimapBox.fillRect(mmX, mmY, mmSize, mmSize);
+    this.minimapBox.lineStyle(2, 0xffffff, 0.9);
+    this.minimapBox.strokeRect(mmX, mmY, mmSize, mmSize);
+
+    this.minimapGfx = this.add.graphics().setScrollFactor(0).setDepth(100000);
+    this.mmX = mmX; this.mmY = mmY; this.mmSize = mmSize;
+    this.mmScaleX = mmSize / WORLD_W;
+    this.mmScaleY = mmSize / WORLD_H;
+
 
     // Camera
     this.cameras.main.setBounds(0,0,WORLD_W,WORLD_H);
@@ -326,7 +341,6 @@ class GameScene extends Phaser.Scene{
     this.spawnFruits(10);
     this.spawnWave();
 
-    this.inRiver = false;
     this.lastRiverTick = 0;
     this.spawnedGeneral = false;
   }
@@ -495,6 +509,8 @@ class GameScene extends Phaser.Scene{
 
     make("marrom",  10, "bode_marrom");
     make("laranja",  5, "bode_laranja");
+
+    this.updateHud();
   }
 
   tryAttack(kind){
@@ -528,6 +544,7 @@ class GameScene extends Phaser.Scene{
     if(enemy.hp <= 0){
       enemy.disableBody(true,true);
       this.remaining--;
+      this.updateHud();
       floatText(this, enemy.x, enemy.y-30, "+1", "#ffeaa7");
     }
   }
@@ -568,13 +585,46 @@ class GameScene extends Phaser.Scene{
   }
 
   updateHud(){
-    this.hpText.setText("HP: " + this.playerHp);
+    const alive = this.enemies.getChildren().filter(e=>e.active).length;
+    this.hpText.setText("HP: " + this.playerHp + "  |  Bodes: " + alive);
     const pct = this.playerHp / PLAYER_MAX_HP;
     this.hpBar.width = 170 * pct;
   }
 
-  update(time, delta){
-    this.inRiver = false;
+  
+  updateMinimap(){
+    if(!this.minimapGfx) return;
+    const g = this.minimapGfx;
+    g.clear();
+
+    // Lago
+    if(this.riverPath){
+      const lx = this.mmX + this.riverPath.x * this.mmScaleX;
+      const ly = this.mmY + this.riverPath.y * this.mmScaleY;
+      const lw = this.riverPath.width * this.mmScaleX;
+      const lh = this.riverPath.height * this.mmScaleY;
+      g.fillStyle(0x1c9bd6, 0.6);
+      g.fillRoundedRect(lx, ly, lw, lh, 10);
+    }
+
+    // Player
+    const px = this.mmX + this.player.x * this.mmScaleX;
+    const py = this.mmY + this.player.y * this.mmScaleY;
+    g.fillStyle(0x24d8fc, 1);
+    g.fillCircle(px, py, 3);
+
+    // Enemies
+    const enemies = this.enemies.getChildren();
+    g.fillStyle(0xff5b5b, 1);
+    for(const e of enemies){
+      if(!e.active) continue;
+      const ex = this.mmX + e.x * this.mmScaleX;
+      const ey = this.mmY + e.y * this.mmScaleY;
+      g.fillRect(ex-1, ey-1, 2, 2);
+    }
+  }
+
+update(time, delta){
 
     let dx=0, dy=0;
 
@@ -638,9 +688,11 @@ class GameScene extends Phaser.Scene{
 
       setIso(e, 0.78);
     });
+    // Lago: checagem de overlap (mais confiável)
+    const inLake = this.physics.overlap(this.player, this.riverZone);
 
-    // River healing tick
-    if(this.inRiver){
+    // Lake healing tick
+    if(inLake){
       this.drinkText.setText("BEBENDO NO LAGO...");
       this.riverGfx.setAlpha(0.92);
 
@@ -669,8 +721,10 @@ class GameScene extends Phaser.Scene{
       g.body.setOffset(g.width*0.33, g.height*0.56);
       setIso(g, 0.78);
       this.remaining = 1;
+      this.updateHud();
       floatText(this, this.player.x, this.player.y-60, "GENERAL CHEGOU!", "#9fe8ff");
     }
+    this.updateMinimap();
 
     // Game over (volta pro menu)
     if(this.playerHp <= 0){
