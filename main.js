@@ -7,7 +7,7 @@
    Obs: mantém as melhorias v1.2 do jogo (tamanhos, rio, cura, espaçamento, mobile).
 */
 
-console.log("[GoatGuardian] BUILD v1.3-startscreen loaded");
+console.log("[GoatGuardian] BUILD v1.3-fix1-1768452042 loaded");
 
 const GAME_W = 1280;
 const GAME_H = 720;
@@ -284,7 +284,6 @@ class GameScene extends Phaser.Scene{
     // Attack box
     this.attackBox = this.add.rectangle(0,0,90,70,0xff0000,0).setDepth(9999);
     this.physics.add.existing(this.attackBox);
-    this.attackBox.body.setAllowGravity(false);
     this.attackBox.body.enable = false;
     this.physics.add.overlap(this.attackBox, this.enemies, this.onHitEnemy, null, this);
 
