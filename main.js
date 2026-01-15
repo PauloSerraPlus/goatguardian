@@ -7,7 +7,7 @@
    Obs: mantém as melhorias v1.2 do jogo (tamanhos, rio, cura, espaçamento, mobile).
 */
 
-console.log("[GoatGuardian] BUILD v1.3-fix1-1768452042 loaded");
+console.log("[GoatGuardian] BUILD v1.4-1768452842 loaded");
 
 const GAME_W = 1280;
 const GAME_H = 720;
@@ -45,9 +45,9 @@ function yToScale(y){
   const t = clamp(y / WORLD_H, 0, 1);
   return 0.72 + t * 0.38;
 }
-function setIso(sprite){
+function setIso(sprite, mult=1){
   sprite.setDepth(sprite.y);
-  sprite.setScale(yToScale(sprite.y) * 0.72);
+  sprite.setScale(yToScale(sprite.y) * 0.72 * mult);
 }
 function isoVel(dx, dy){
   return { vx: (dx - dy) * 0.95, vy: (dx + dy) * 0.62 };
@@ -130,6 +130,8 @@ class StartScene extends Phaser.Scene{
   constructor(){ super("StartScene"); }
 
   create(){
+    this._starting = false;
+    this.input.enabled = true;
     const w = this.cameras.main.width;
     const h = this.cameras.main.height;
 
@@ -251,12 +253,12 @@ class GameScene extends Phaser.Scene{
     this.add.image(0,0,"bg").setOrigin(0,0).setDepth(-100);
 
     // River visual
-    this.riverPath = new Phaser.Geom.Rectangle(1050, 250, 360, 1250);
-    this.riverGfx = this.add.graphics().setDepth(-50);
-    this.drawRiver();
+    this.lakePath = new Phaser.Geom.Rectangle(260, 520, 320, 260);
+    this.lakeGfx = this.add.graphics().setDepth(-50);
+    this.drawLake();
 
-    this.riverZone = this.add.zone(this.riverPath.x, this.riverPath.y, this.riverPath.width, this.riverPath.height).setOrigin(0,0);
-    this.physics.add.existing(this.riverZone, true);
+    this.lakeZone = this.add.zone(this.lakePath.x, this.lakePath.y, this.lakePath.width, this.lakePath.height).setOrigin(0,0);
+    this.physics.add.existing(this.lakeZone, true);
 
     // Player
     this.playerHp = PLAYER_MAX_HP;
@@ -264,7 +266,7 @@ class GameScene extends Phaser.Scene{
     this.player.setCollideWorldBounds(true);
     this.player.body.setSize(this.player.width*0.35, this.player.height*0.25, true);
     this.player.body.setOffset(this.player.width*0.325, this.player.height*0.62);
-    setIso(this.player);
+    setIso(this.player, 1.0);
 
     this.lastHit = 0;
     this.lastHorn = 0;
@@ -279,7 +281,7 @@ class GameScene extends Phaser.Scene{
     this.physics.add.collider(this.enemies, this.enemies);
 
     this.physics.add.overlap(this.player, this.fruits, this.onFruit, null, this);
-    this.physics.add.overlap(this.player, this.riverZone, ()=>{ this.inRiver = true; }, null, this);
+    this.physics.add.overlap(this.player, this.lakeZone, ()=>{ this.inRiver = true; }, null, this);
 
     // Attack box
     this.attackBox = this.add.rectangle(0,0,90,70,0xff0000,0).setDepth(9999);
@@ -327,24 +329,34 @@ class GameScene extends Phaser.Scene{
     this.spawnedGeneral = false;
   }
 
-  drawRiver(){
-    const g = this.riverGfx;
+  drawLake(){
+    const g = this.lakeGfx;
     g.clear();
 
-    g.fillStyle(0x9fe8ff, 0.40);
-    g.fillRoundedRect(this.riverPath.x-10, this.riverPath.y-10, this.riverPath.width+20, this.riverPath.height+20, 34);
+    // Lago: corpo principal + borda + brilho leve
+    const x = this.lakePath.x;
+    const y = this.lakePath.y;
+    const w = this.lakePath.width;
+    const h = this.lakePath.height;
 
-    g.fillStyle(0x1c9bd6, 0.55);
-    g.fillRoundedRect(this.riverPath.x, this.riverPath.y, this.riverPath.width, this.riverPath.height, 28);
+    g.fillStyle(0x9fe8ff, 0.38);
+    g.fillRoundedRect(x-14, y-14, w+28, h+28, 80);
+
+    g.fillStyle(0x1c9bd6, 0.60);
+    g.fillRoundedRect(x, y, w, h, 70);
+
+    g.fillStyle(0xffffff, 0.06);
+    g.fillEllipse(x + w*0.38, y + h*0.35, w*0.55, h*0.35);
 
     g.lineStyle(2, 0xd7fbff, 0.25);
-    for(let i=0;i<18;i++){
-      const yy = this.riverPath.y + 30 + i*65;
+    for(let i=0;i<6;i++){
+      const yy = y + 40 + i*35;
       g.beginPath();
-      g.moveTo(this.riverPath.x+25, yy);
-      g.lineTo(this.riverPath.x+this.riverPath.width-25, yy+Phaser.Math.Between(-10,10));
+      g.moveTo(x + 35, yy);
+      g.lineTo(x + w - 35, yy + Phaser.Math.Between(-6,6));
       g.strokePath();
     }
+  }
   }
 
   setupMobileControls(){
@@ -391,7 +403,7 @@ class GameScene extends Phaser.Scene{
           const y = Phaser.Math.Between(120, WORLD_H-120);
 
           if(Phaser.Math.Distance.Between(x,y,this.player.x,this.player.y) < 260) continue;
-          if(Phaser.Geom.Rectangle.ContainsPoint(this.riverPath, new Phaser.Geom.Point(x,y))) continue;
+          if(Phaser.Geom.Rectangle.ContainsPoint(this.lakePath, new Phaser.Geom.Point(x,y))) continue;
           if(!addPoint(x,y,minDist)) continue;
 
           const o = this.obstacles.create(x,y,key);
@@ -408,11 +420,11 @@ class GameScene extends Phaser.Scene{
       }
     };
 
-    tryPlace("tree_big",   10, 260, 0.62);
-    tryPlace("tree_small", 14, 210, 0.58);
-    tryPlace("rock_big",    8, 240, 0.55);
-    tryPlace("rock_small", 12, 190, 0.52);
-    tryPlace("bush",       16, 180, 0.40);
+    tryPlace("tree_big",   6, 320, 0.60);
+    tryPlace("tree_small", 8, 280, 0.56);
+    tryPlace("rock_big",    5, 300, 0.52);
+    tryPlace("rock_small", 7, 260, 0.50);
+    tryPlace("bush",        9, 240, 0.38);
   }
 
   spawnFruits(count){
@@ -423,7 +435,7 @@ class GameScene extends Phaser.Scene{
         const x = Phaser.Math.Between(140, WORLD_W-140);
         const y = Phaser.Math.Between(140, WORLD_H-140);
         if(Phaser.Math.Distance.Between(x,y,this.player.x,this.player.y) < 160) continue;
-        if(Phaser.Geom.Rectangle.ContainsPoint(this.riverPath, new Phaser.Geom.Point(x,y))) continue;
+        if(Phaser.Geom.Rectangle.ContainsPoint(this.lakePath, new Phaser.Geom.Point(x,y))) continue;
 
         const f = this.fruits.create(x,y,"fruit");
         f.setOrigin(0.5,0.75);
@@ -455,7 +467,7 @@ class GameScene extends Phaser.Scene{
       e.setCollideWorldBounds(true);
       e.body.setSize(e.width*0.32, e.height*0.24, true);
       e.body.setOffset(e.width*0.34, e.height*0.58);
-      setIso(e);
+      setIso(e, 0.78);
       return e;
     };
 
@@ -466,7 +478,7 @@ class GameScene extends Phaser.Scene{
         x = Phaser.Math.Between(80, WORLD_W-80);
         y = Phaser.Math.Between(80, WORLD_H-80);
         if(Phaser.Math.Distance.Between(x,y,this.player.x,this.player.y) < 420) continue;
-        if(Phaser.Geom.Rectangle.ContainsPoint(this.riverPath, new Phaser.Geom.Point(x,y))) continue;
+        if(Phaser.Geom.Rectangle.ContainsPoint(this.lakePath, new Phaser.Geom.Point(x,y))) continue;
         break;
       }
       return {x,y};
@@ -589,7 +601,7 @@ class GameScene extends Phaser.Scene{
 
     const vv = isoVel(dx,dy);
     this.player.setVelocity(vv.vx * PLAYER_SPEED, vv.vy * PLAYER_SPEED);
-    setIso(this.player);
+    setIso(this.player, 1.0);
 
     // Fade obstacles behind player
     this.obstacles.getChildren().forEach(o=>{
@@ -623,13 +635,13 @@ class GameScene extends Phaser.Scene{
         e.setVelocity(0,0);
       }
 
-      setIso(e);
+      setIso(e, 0.78);
     });
 
     // River healing tick
     if(this.inRiver){
-      this.drinkText.setText("BEBENDO NO RIACHO...");
-      this.riverGfx.setAlpha(0.92);
+      this.drinkText.setText("BEBENDO NO LAGO...");
+      this.lakeGfx.setAlpha(0.92);
 
       if(time - this.lastRiverTick > RIVER_TICK_MS){
         this.lastRiverTick = time;
@@ -637,7 +649,7 @@ class GameScene extends Phaser.Scene{
       }
     }else{
       this.drinkText.setText("");
-      this.riverGfx.setAlpha(1);
+      this.lakeGfx.setAlpha(1);
     }
 
     // General spawn
@@ -654,7 +666,7 @@ class GameScene extends Phaser.Scene{
       g.setCollideWorldBounds(true);
       g.body.setSize(g.width*0.34, g.height*0.26, true);
       g.body.setOffset(g.width*0.33, g.height*0.56);
-      setIso(g);
+      setIso(g, 0.78);
       this.remaining = 1;
       floatText(this, this.player.x, this.player.y-60, "GENERAL CHEGOU!", "#9fe8ff");
     }
