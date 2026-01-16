@@ -7,7 +7,7 @@
    Obs: mantém as melhorias v1.2 do jogo (tamanhos, rio, cura, espaçamento, mobile).
 */
 
-console.log("[GoatGuardian] BUILD v1.3.4-victory-1768500739 loaded");
+console.log("[GoatGuardian] BUILD v1.3.5-phases-1768568169 loaded");
 
 const GAME_W = 1280;
 const GAME_H = 720;
@@ -258,7 +258,7 @@ class Briefing1Scene extends Phaser.Scene{
       color:"#ffffff"
     }).setOrigin(0.5);
 
-    this.add.text(w/2, h/2 - 20,
+    this.add.text(w/2, h/2 + 0,
       "Vencer os Bodes Comuns (com 1 golpe)\n" +
       "e Bodes Guerreiros (com 2 golpes).\n\n" +
       "Use setas para mover sua Cabra.\n" +
@@ -388,6 +388,7 @@ class GameScene extends Phaser.Scene{
     this.lastRiverTick = 0;
     this.spawnedGeneral = false;
     this.spawnedBoss = false;
+    this.phase = "commons";
   }
 
   drawRiver(){
@@ -789,6 +790,7 @@ update(time, delta){
     if(this.remaining <= 0 && !this.spawnedGeneral){
       // terminou comuns e guerreiros
       this.spawnedGeneral = true;
+      this.phase = "generals";
       this.showCenterMessage(
         "Parabéns!",
         "Agora o seu desafio é vencer os Bodes Generais (com 3 golpes).",
@@ -829,6 +831,7 @@ update(time, delta){
     if(this.remaining <= 0 && this.spawnedGeneral && !this.spawnedBoss){
       // terminou os generais
       this.spawnedBoss = true;
+      this.phase = "boss";
 
       this.showCenterMessage(
         "Parabéns!",
@@ -861,11 +864,9 @@ update(time, delta){
         this.updateHud();
         floatText(this, this.player.x, this.player.y-60, "CHEFÃO FINAL!", "#ffffff");
       });
-    }
-
-
-    // Vitória: derrotou o Grande Bode Preto
-    if(this.spawnedBoss && this.remaining <= 0){
+    }    // Vitória: apenas quando o CHEFÃO (bode preto) já foi spawnado e derrotado
+    if(this.phase === "boss" && this.remaining <= 0){
+      this.phase = "victory";
       this.scene.start("VictoryScene");
       return;
     }
