@@ -7,7 +7,7 @@
    Obs: mantém as melhorias v1.2 do jogo (tamanhos, rio, cura, espaçamento, mobile).
 */
 
-console.log("[GoatGuardian] BUILD v1.3.5-phases-1768568169 loaded");
+console.log("[GoatGuardian] BUILD v1.3.6-phasefix-1768596507 loaded");
 
 const GAME_W = 1280;
 const GAME_H = 720;
@@ -252,13 +252,13 @@ class Briefing1Scene extends Phaser.Scene{
 
     this.add.rectangle(w/2,h/2,w,h,0x000000,0.85);
 
-    this.add.text(w/2, h/2 - 90, "Primeira Missão", {
+    this.add.text(w/2, h/2 - 120, "Primeira Missão", {
       fontFamily:"Arial",
       fontSize:"36px",
       color:"#ffffff"
     }).setOrigin(0.5);
 
-    this.add.text(w/2, h/2 + 0,
+    this.add.text(w/2, h/2 + 40,
       "Vencer os Bodes Comuns (com 1 golpe)\n" +
       "e Bodes Guerreiros (com 2 golpes).\n\n" +
       "Use setas para mover sua Cabra.\n" +
@@ -786,16 +786,20 @@ update(time, delta){
       this.drinkText.setText("");
       this.riverGfx.setAlpha(1);
     }
-    // Generais (azuis) e Chefão (preto)
-    if(this.remaining <= 0 && !this.spawnedGeneral){
+    
+    // Progressão por fases (estado)
+    // phases: commons -> intermission_generals -> generals -> intermission_boss -> boss -> victory
+    if(this.phase === "commons" && this.remaining <= 0){
       // terminou comuns e guerreiros
-      this.spawnedGeneral = true;
-      this.phase = "generals";
+      this.phase = "intermission_generals";
       this.showCenterMessage(
         "Parabéns!",
         "Agora o seu desafio é vencer os Bodes Generais (com 3 golpes).",
         10000
       );
+
+      // segura a lógica até spawnar os generais
+      this.remaining = 999;
 
       this.time.delayedCall(10500, ()=>{
         const spawnBlue = ()=>{
@@ -823,21 +827,22 @@ update(time, delta){
 
         spawnBlue();
         spawnBlue();
+        this.phase = "generals";
         this.remaining = 2;
         this.updateHud();
       });
-    }
 
-    if(this.remaining <= 0 && this.spawnedGeneral && !this.spawnedBoss){
-      // terminou os generais
-      this.spawnedBoss = true;
-      this.phase = "boss";
+    } else if(this.phase === "generals" && this.remaining <= 0){
+      // terminou os generais (azuis)
+      this.phase = "intermission_boss";
 
       this.showCenterMessage(
         "Parabéns!",
         "Agora só falta vencer o Grande Bode Preto!",
         2400
       );
+
+      this.remaining = 999;
 
       this.time.delayedCall(2600, ()=>{
         let x,y,tries=0;
@@ -860,11 +865,14 @@ update(time, delta){
         b.body.setSize(b.width*0.38, b.height*0.30, true);
         b.body.setOffset(b.width*0.31, b.height*0.54);
         setIso(b, 0.78);
+
+        this.phase = "boss";
         this.remaining = 1;
         this.updateHud();
         floatText(this, this.player.x, this.player.y-60, "CHEFÃO FINAL!", "#ffffff");
       });
-    }    // Vitória: apenas quando o CHEFÃO (bode preto) já foi spawnado e derrotado
+    }
+// Vitória: apenas quando o CHEFÃO (bode preto) já foi spawnado e derrotado
     if(this.phase === "boss" && this.remaining <= 0){
       this.phase = "victory";
       this.scene.start("VictoryScene");
